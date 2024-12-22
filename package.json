@@ -1,0 +1,21 @@
+{
+  "name": "chai-backend",
+  "version": "1.0.0",
+  "description": "a backend series - youtube",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "chai",
+    "backend",
+    "js"
+  ],
+  "author": "Ali Shair",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prettier": "^3.4.2"
+  }
+}
