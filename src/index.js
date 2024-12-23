@@ -2,10 +2,19 @@
 // require('dotenv').config({path: "./env"}) // jo hamari home directory ha wahi env pari ha // it is correct but for code consistency we use import
 import dotenv from 'dotenv'
 import connectDB from "./db/index.js";
+import { app } from './app.js';
 dotenv.config({
     path: './env'
 })
-connectDB();
+connectDB() // it will give a promise cus this is async func so we can use then catch
+.then(()=>{
+    app.listen(process.env.PORT || 8000 , ()=>{
+        console.log(`server is listening at http:localhost:${process.env.PORT}`);
+    })
+})
+.catch((err)=>{
+    console.error('Local Error DB connection Failed' + err);
+})
 
 /*
 // go in package.json and kaho ik experimenta feature use karnay do only if you are using import instead or require
