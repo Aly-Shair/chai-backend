@@ -49,4 +49,17 @@ app.use(cookieParser()) // iskay under bhi options han magar kabhi need nahi hui
     // res.send('ali');
 // } 
 
+
+// routes import
+
+import userRouter from './routes/user.routes.js'
+
+// routers declaration
+// app.get// ye hum tab boltay thay jab hum is tarha se router nahi export kar rahay hotay thay
+// ab router ko lanay ka ley middleware lana paray ga
+app.use('/api/v1/users', userRouter) // ab koi bhi user jab type karay ga /users to app controll dedo gay userRouter par
+// http:localhost:8000/users/register
+// http:localhost:8000/api/v1/users/register
+
+
 export {app};

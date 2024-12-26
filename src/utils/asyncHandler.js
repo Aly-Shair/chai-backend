@@ -1,8 +1,8 @@
 // ye sirf ik method bnai ga or usko export kar de ga
 // appraoch 2 promises
-const asyncHandler = (requestHander) => {
+const asyncHandler = (requestHander) => { // iska faida kar cheez ko humai promises ma nahi dalna paray ga try catch ma nahi dalna paray ga
     // as it is return kar dena ha promise ki formate ma
-    (req, res, next) => {
+    return (req, res, next) => {
         Promise.resolve(
             requestHander(req, res, next)
         ).catch( // catch or reject you want to use
