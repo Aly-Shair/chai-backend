@@ -54,7 +54,7 @@ userSchema.pre('save', async function (next) { // jab bhi data save ho raha ha u
     // jab kam ho jai to next ko call karna parta ha kay ye flag ab agay pas kar do
     // this.password = bcrypt.hash('kisko hash karna ha', 'kitnay rounds lagao a number eg salts')
     if(!this.isModified('password')) return next();
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 
     // problem:
@@ -70,7 +70,7 @@ userSchema.methods.isPasswordCorrect = async function (password) { // isPassword
 
 userSchema.methods.generateAccessToken = function () {
     // chahey vaiable me hold kar key return karo chaheya direclty return kar do
-    return jwt.sign({ // sign method to generate token
+    return Jwt.sign({ // sign method to generate token
         _id: this._id, // _id is syntax of mongodb it stored id using underscore
         email: this.email,
         username: this.username,
@@ -86,7 +86,7 @@ userSchema.methods.generateAccessToken = function () {
     // TO ASYNC AWAIT LAGANAY KI ZAROORAT NAHI
 }
 userSchema.methods.generateRefreshToken = function () {
-    return jwt.sign({
+    return Jwt.sign({
         _id: this._id, // Refresh token ma data kam hota ha ku kay ye bar bar refresh hota ha
     },
     process.env.REFRESH_TOKEN_SECRET,
@@ -96,3 +96,4 @@ userSchema.methods.generateRefreshToken = function () {
 }
 
 export const User = mongoose.model('User', userSchema);
+// ye User direct bat kar sakta ha database se ku kay mongoose kay through bana ha

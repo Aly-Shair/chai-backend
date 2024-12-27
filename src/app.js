@@ -5,9 +5,9 @@ import cookieParser from 'cookie-parser'; // ma meray server se user ka browser 
 
 const app = express();
 
-app.use(cors()); // mojorly asey configure kar detay han or asey configure ho bhi jata ha
+// app.use(cors()); // mojorly asey configure kar detay han or asey configure ho bhi jata ha
 
-// LEKIN APP options bhi de saktay han cors me ho ik object leta ha
+// LEKIN APP options bhi de saktay han cors me jo ik object leta ha
 
 app.use(cors({
     origin:process.env.CORS_ORIGIN, // URL OF OUR FRONT END // har front ko bat nahi karnay de gay(eg. "*") sirf panay frontend ko pat karnay de gay
@@ -45,7 +45,7 @@ app.use(cookieParser()) // iskay under bhi options han magar kabhi need nahi hui
 // rahay han // next is just a flag
 // jab ye wala banda(if check) apna kam kar ley ga to next ik flag pas karta ha ka apna kam to ho chuka ha ab next par chalay jao
 // to ye next check(if) ka pas chalay jai ga or usko bhi next flag use karna zaroori ha agar pass karnay ka leya
-// phir  jab next yaha pas ho ga (res.send) to wo kahay ga apnay to response hi bhage dia ha to next kuch ha hi nahi to usko(next) discard kar de ga
+// phir  jab next yaha pas ho ga (res.send) to wo kahay ga apnay to response hi bhaj dia ha to next kuch ha hi nahi to usko(next) discard kar de ga
     // res.send('ali');
 // } 
 

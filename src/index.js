@@ -29,7 +29,7 @@ for experimental feature "--experimental-json-modules"
 /* // approach 1
 import mongoose from "mongoose"
 import { DB_NAME } from "./constants";
-// index file ma kabhi kabar app file ko bhi initialize kar latay han jo express se banti ha
+// index file ma kabhi kabaar app file ko bhi initialize kar latay han jo express se banti ha
 import express from 'express'
 const app = express();
 
