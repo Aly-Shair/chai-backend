@@ -5,7 +5,7 @@
 // and then remove from the server
 
 import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs' // fs is file system by default with nodejs
+import fs, { unlinkSync } from 'fs' // fs is file system by default with nodejs
 
 cloudinary.config({  // ye configuration hi ha jo apko file upload karnay ki premission de gi warna usko kasey pata kon sa account upload kar raha ha
     cloud_name: process.env.CLOUDINARY_NAME, 
@@ -22,8 +22,9 @@ const uploadOnCloudinary = async (localFilePath) => {
             resource_type: 'auto' // image, video, etc
         })
         // file has been uploaded
-        // console.log('File has been uploaded Successfully' + response);
-        console.log('File has been uploaded Successfully' + response.url);
+        console.log('File has been uploaded Successfully', response);
+        // console.log('File has been uploaded Successfully' + response.url);
+        unlinkSync(localFilePath)
         return response;
     } catch (error) {
         fs.unlink(localFilePath) // remove the locally saved temporary file as the upload operation got failed

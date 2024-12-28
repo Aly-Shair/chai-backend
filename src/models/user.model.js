@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { Jwt } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+
 import bcrypt from 'bcrypt' // we use mongoose hooks for encryption // direct encrypt karna possible nahi ha
 
 
@@ -70,7 +71,7 @@ userSchema.methods.isPasswordCorrect = async function (password) { // isPassword
 
 userSchema.methods.generateAccessToken = function () {
     // chahey vaiable me hold kar key return karo chaheya direclty return kar do
-    return Jwt.sign({ // sign method to generate token
+    return jwt.sign({ // sign method to generate token
         _id: this._id, // _id is syntax of mongodb it stored id using underscore
         email: this.email,
         username: this.username,
@@ -86,7 +87,7 @@ userSchema.methods.generateAccessToken = function () {
     // TO ASYNC AWAIT LAGANAY KI ZAROORAT NAHI
 }
 userSchema.methods.generateRefreshToken = function () {
-    return Jwt.sign({
+    return jwt.sign({
         _id: this._id, // Refresh token ma data kam hota ha ku kay ye bar bar refresh hota ha
     },
     process.env.REFRESH_TOKEN_SECRET,

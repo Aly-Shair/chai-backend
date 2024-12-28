@@ -22,6 +22,7 @@ const registerUser = asyncHandler( async (req, res) => {
     */
 
 //    getting user details from req.body
+console.log('this is req.boody: ', req.body)
     const {username, email, fullName, password} = req.body // body se data aa sakta ha url se form se json se, sab ka data body se mil jai ga except URL
     // these values are from model of user {username, email, fullName, password} we have destructure it
     console.log('email', email); // we test it using postman // postman se raw data send karnay ka matlb hota ha ap seedha json encode kar do
@@ -37,7 +38,7 @@ const registerUser = asyncHandler( async (req, res) => {
     // User.findOne({email})
     // User.findOne({username}) // you can find seperate seperate
 
-    const existedUser = User.findOne({ // ye return karay ga apko jo bhi isey document mila ha is username or ka email ka
+    const existedUser = await User.findOne({ // ye return karay ga apko jo bhi isey document mila ha is username or ka email ka
         // you can use many operators using $
         $or: [{email},{username}]
     })
@@ -46,10 +47,20 @@ const registerUser = asyncHandler( async (req, res) => {
         throw new ApiError(409, "User with same email or username already exist")
     }
 
+    console.log('this is req.files: ', req.files)
+
     // req.files // files is not from express it is form multer
     const avatarLocalPath = req.files?.avatar[0]?.path //optionally chain karna ziada bahtar rahta ha 
     // we have named it avatar(in middleware) so using name here avatar // a field has many options we need first option at zero idx and geting its path
-    const coverImageLocalPath = req.files.coverImage[0]?.path;
+    // const coverImageLocalPath = req.files.coverImage[0]?.path;
+
+///////////////////////////////////////////////////
+    let coverImageLocalPath; // the advance check which is on the above lines // give an error if coverImage is not given (cannot read the properties of undefined)
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+///////////////////////////////////////////////////
+
 
     // checking is avatar available
 
@@ -58,7 +69,7 @@ const registerUser = asyncHandler( async (req, res) => {
     }
     
     const avatar = await uploadOnCloudinary(avatarLocalPath); // server par upload ho rahi ha to time lagay ga isi leya await lagay ga
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath); // agar cloudinary ko local path nahi mil raha coverImage ka to wo error return nahi kar raha bas empty string return kar raha ha ye bohat hi achi bat ha 
     
     if(!avatar){ // agar cloudinary par upload nahi hua to error de do warna database ma error ai ga
         throw new ApiError(400, 'Profile pic is required')
