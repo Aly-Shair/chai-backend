@@ -1,4 +1,4 @@
-// ye method sirf verify karay ga kay use ha ya nahi ha verify
+// ye method sirf verify karay ga kay user ha ya nahi ha verify
 
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
