@@ -5,31 +5,33 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
-const generateAccessAndRefreshTokens = async(userId)=>{
-    try {
-        const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
-        // access token to hum user ko de detay han lekin refresh token hum database ma bhi store kartay han takay password na puchna paray user se
-        user.refreshToken = refreshToken;
-        // user.save() // jab ap save karwanay lagtay an na to mongoose kay model bhi kikin ho jatay han for example: ye password wala method bhi kickin hojai ga ye jab bhi save karwao to password hona hi chaheya par yaha to password de hi nahi rahay
-        /*
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    // access token to hum user ko de detay han lekin refresh token hum database ma bhi store kartay han takay password na puchna paray user se
+    user.refreshToken = refreshToken;
+    // user.save() // jab ap save karwanay lagtay an na to mongoose kay model bhi kikin ho jatay han for example: ye password wala method bhi kickin hojai ga ye jab bhi save karwao to password hona hi chaheya par yaha to password de hi nahi rahay
+    /*
             password:{
                 type: String, 
                 required:[true, 'Password is Required']
             },
         */ // esi situation ma ap ik parameter pass kartay ho
-        // database ka operation ha time lagnay hi wala ha to await karwa do
-        await user.save({ validateBeforeSave: false }) // validation kuch mat lagao bas save kar do
-    
-            return {
-                accessToken,
-                refreshToken
-            }
+    // database ka operation ha time lagnay hi wala ha to await karwa do
+    await user.save({ validateBeforeSave: false }); // validation kuch mat lagao bas save kar do
 
-    } catch (error) {
-        throw new ApiError(500, 'something went wrong while generating Access and Refresh token')
-    }
+    return {
+      accessToken,
+      refreshToken,
+    };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "something went wrong while generating Access and Refresh token"
+    );
+  }
 };
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -139,7 +141,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    /*
+  /*
         req body -> data
         username or email validate and password
         find user in database
@@ -148,143 +150,262 @@ const loginUser = asyncHandler(async (req, res) => {
         send cookie
     */
 
-        const {username, email, password} = req.body;
+  const { username, email, password } = req.body;
 
-        if(!(username || email)){ // Error: !username || !email
-            throw new ApiError(400, 'username or email is required');
-        }
+  if (!(username || email)) {
+    // Error: !username || !email
+    throw new ApiError(400, "username or email is required");
+  }
 
+  // const user = User.findOne({email})
+  // const user = User.findOne({username})
+  const user = await User.findOne(
+    // findOne jasey hi pahli entry miljati ha db ma wo return kar deta ha
+    {
+      $or: [{ email }, { username }], // isdono me se koi bhi correct hua to login karwa dein gay
+    }
+  );
 
-        // const user = User.findOne({email})
-        // const user = User.findOne({username})
-        const user = await User.findOne( // findOne jasey hi pahli entry miljati ha db ma wo return kar deta ha
-            {
-                $or: [{email}, {username}] // isdono me se koi bhi correct hua to login karwa dein gay
-            }
-        )
+  if (!user) {
+    throw new ApiError(404, "user does not exist");
+  }
 
-        if(!user){
-            throw new ApiError(404, 'user does not exist')
-        }
-        
-        // user iskay pas saray methods available ha jo humnay inject keya han through mongoose in the user.models.js file
-        
-        const isPasswordValid = await user.isPasswordCorrect(password)
-        
-        if(!isPasswordValid){
-            throw new ApiError(401, 'invalid user credentials')
-        }
+  // user iskay pas saray methods available ha jo humnay inject keya han through mongoose in the user.models.js file
 
-        // creating access and refresh token
-        // ab ye access or refresh token wala kam jo ha na wo ap kai bar karo gay
-        // infact ye kam itna common ha kai jagah ye humay use ai ga to isko ik method ma dal detay han
-        const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id);
+  const isPasswordValid = await user.isPasswordCorrect(password);
 
-        const loggedInUser = await User.findById(user._id) // optional step cuz we already have this user above
-        .select("-password -refreshToken")
+  if (!isPasswordValid) {
+    throw new ApiError(401, "invalid user credentials");
+  }
 
-        // sending cookies
-        // kuch options(an object) design karnay partay han humay cookies kay leya
+  // creating access and refresh token
+  // ab ye access or refresh token wala kam jo ha na wo ap kai bar karo gay
+  // infact ye kam itna common ha kai jagah ye humay use ai ga to isko ik method ma dal detay han
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
 
-        const options = { // jab ap httpOnly: true,secure: true kar detay ho tab hota ye ha key ye cookies server se hi modified hoti han frontend se nahi ho sakti bas show ho gi
-            httpOnly: true,
-            secure: true
-        }
+  const loggedInUser = await User.findById(user._id) // optional step cuz we already have this user above
+    .select("-password -refreshToken");
 
-        // cookie(key, value) // cookie parser is needed to use this
+  // sending cookies
+  // kuch options(an object) design karnay partay han humay cookies kay leya
 
-        return res.status(200)
-        .cookie('accessToken', accessToken, options)
-        .cookie('refreshToken', refreshToken, options)
-        .json(
-            new ApiResponse(200, {
-                user: loggedInUser,
-                accessToken,
-                refreshToken // cookie ma send ki ha access or refresh to yaha ku bhej rahay ho // just achi practice ha
-            },
-            "user loggedin successfully")
-        )
+  const options = {
+    // jab ap httpOnly: true,secure: true kar detay ho tab hota ye ha key ye cookies server se hi modified hoti han frontend se nahi ho sakti bas show ho gi
+    httpOnly: true,
+    secure: true,
+  };
 
+  // cookie(key, value) // cookie parser is needed to use this
 
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken, // cookie ma send ki ha access or refresh to yaha ku bhej rahay ho // just achi practice ha
+        },
+        "user loggedin successfully"
+      )
+    );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
   // remove refresh token
-    // cookies remove karo
+  // cookies remove karo
 
-
-    // is function par anay se pahlay ik middleware execute hua ha to humay req.user milay ga
-    // req.user._id
-    // pura user obj le ai gay ik query mar kar or uska user object delete kar dein gay
+  // is function par anay se pahlay ik middleware execute hua ha to humay req.user milay ga
+  // req.user._id
+  // pura user obj le ai gay ik query mar kar or uska user object delete kar dein gay
 
   // User.findById() // userLanaParayGaPhirUskaRefreshTokenDelKarnaParayGaPhirUseySaveKarnaParayGaValidateBeforeFalseKarnaParayGa
   await User.findByIdAndUpdate(
-     req.user._id,
+    req.user._id,
     {
-      $set:{ // mongodb operator
-        refreshToken: undefined // kia update karna ha
-      }
+      $set: {
+        // mongodb operator
+        refreshToken: undefined, // kia update karna ha
+      },
     },
     {
-      new: true // ye laganay se return ma humay updated value milay gi else old value milay gi(to ye refreshToken bhi a hi jai ga but ye undefined wala mujhey chaheya)
+      new: true, // ye laganay se return ma humay updated value milay gi else old value milay gi(to ye refreshToken bhi a hi jai ga but ye undefined wala mujhey chaheya)
     }
-  )
+  );
 
+  // now removing cookies
 
-    // now removing cookies
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
 
-    const options = { 
-      httpOnly: true,
-      secure: true
-  }
-
-    return res.status(200)
-    .clearCookie('accessToken', options)
-    .clearCookie('refreshToken', options)
-    .json(new ApiResponse(200, {}, 'User logged Out'))
-
-})
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out"));
+});
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =  req.cookies.accessToken || req.body.accessToken // from web || from mobile
+  const incomingRefreshToken = req.cookies.accessToken || req.body.accessToken; // from web || from mobile
 
-  if(!incomingRefreshToken) throw new ApiError(401, "unauthorized request")
-  
+  if (!incomingRefreshToken) throw new ApiError(401, "unauthorized request");
+
   // decode is leya kar rahay han cookies ma encrypted hota ha or database ma raw hota ha
 
   try {
-    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
-  
-  
-    
-    const user = await User.findById(decodedToken?._id)
-    
-    if(!user) throw new ApiError(401, "invalid refresh token")
-  
-    if(incomingRefreshToken !== user.refreshToken){ // these are encoded tokens not decoded
-      throw new ApiError(401, 'access token is expired or used');
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) throw new ApiError(401, "invalid refresh token");
+
+    if (incomingRefreshToken !== user.refreshToken) {
+      // these are encoded tokens not decoded
+      throw new ApiError(401, "access token is expired or used");
     }
-  
+
     const options = {
       httpOnly: true,
-      secure: true
-    }
-  
-   const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
-  
-    return res.status(203)
-    .cookie('accessToken', accessToken, options)
-    .cookie('refreshToken', refreshToken, options)
-    .json(new ApiResponse(200, {accessToken, refreshToken}, 'access token refreshed'))
-  
-  } catch (error) {
-    throw new ApiError(401, error.message || 'invalid refresh Token')
-  }
-})
+      secure: true,
+    };
 
-export { 
-    registerUser,
-    loginUser,
-    logoutUser,
-    refreshAccessToken
- };
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id
+    );
+
+    return res
+      .status(203)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          "access token refreshed"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error.message || "invalid refresh Token");
+  }
+});
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const user = await findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Invalid old password");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password changed successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"));
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+
+  if (!fullName || !email) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const user = User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        fullName,
+        email: email,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("- password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account details updated successfully"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar.url) throw new ApiError(400, "Error while uploading Avatar");
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, 'Avatar updated'))
+});
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+
+  if (!coverImageLocalPath) throw new ApiError(400, "Cover Image file is missing");
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage.url) throw new ApiError(400, "Error while uploading Cover Image");
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, 'Cover Image updated'))
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage
+};
