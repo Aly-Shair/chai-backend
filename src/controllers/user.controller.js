@@ -367,19 +367,19 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     }
   ).select("-password");
 
-  return res
-  .status(200)
-  .json(new ApiResponse(200, 'Avatar updated'))
+  return res.status(200).json(new ApiResponse(200, "Avatar updated"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
 
-  if (!coverImageLocalPath) throw new ApiError(400, "Cover Image file is missing");
+  if (!coverImageLocalPath)
+    throw new ApiError(400, "Cover Image file is missing");
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
-  if (!coverImage.url) throw new ApiError(400, "Error while uploading Cover Image");
+  if (!coverImage.url)
+    throw new ApiError(400, "Error while uploading Cover Image");
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -393,9 +393,84 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     }
   ).select("-password");
 
-  return res
-  .status(200)
-  .json(new ApiResponse(200, 'Cover Image updated'))
+  return res.status(200).json(new ApiResponse(200, "Cover Image updated"));
+});
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    // optionally check // agar undefined hua to uska trim() to nahi karo gay na
+    throw new ApiError(400, "Username is Missing");
+  }
+
+  // User.find({username})
+
+  const channel = await User.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions", // Subscription from Subscription model database me plural ho jata ha or lowercase that is why
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions", // Subscription from Subscription model database me plural ho jata ha or lowercase that is why
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        // User model ma kuch cheezain add kar dey ga
+        subscribersCount: {
+          $size: "$subscribers", // $ cuz it is field now
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            // apkay pas jo doc aya ha na subscribers usmey ma hu ya nahi // "$subscribers.subscriber" subscriber humnay model ma nam rakha ha
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] }, // $in operator arrays ma bhi dekh leta ha or obj me bhi dekh leta ha
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: { // apkay projects ma bohat saray fields han ab ap jo jo field bolo gay wohi ma return karu ga
+        // sari values ko project nahi karay ga jo bhi demand kar rahay han ma selected cheezon ko doon ga
+        fullName: 1, // selected cheezon ma se jin jin cheezon ko passon karna ha uskay agay laga de jeya 1
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]); // ye ik array leta han // log its value(channel) // array return karta ha // hamesha first value hi kam ki hoti ha
+
+  if(!channel?.length){
+    throw new ApiError(404, 'Channel does not exist');
+  }
+
+  return res.status(200)
+  .json(
+    new ApiResponse(200, channel[0], "User channel fetched successfully")
+  )
+
 });
 
 export {
@@ -407,5 +482,5 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
 };
