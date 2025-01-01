@@ -229,9 +229,12 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        // mongodb operator
-        refreshToken: undefined, // kia update karna ha
+      // $set: {
+      //   // mongodb operator
+      //   refreshToken: undefined, // kia update karna ha
+      // },
+      $unset: {
+        refreshToken: 1, // jo bhi field unset karna ha uskay agay 1 likh do
       },
     },
     {
@@ -449,7 +452,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
     {
-      $project: { // apkay projects ma bohat saray fields han ab ap jo jo field bolo gay wohi ma return karu ga
+      $project: {
+        // apkay projects ma bohat saray fields han ab ap jo jo field bolo gay wohi ma return karu ga
         // sari values ko project nahi karay ga jo bhi demand kar rahay han ma selected cheezon ko doon ga
         fullName: 1, // selected cheezon ma se jin jin cheezon ko passon karna ha uskay agay laga de jeya 1
         username: 1,
@@ -463,64 +467,72 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
   ]); // ye ik array leta han // log its value(channel) // array return karta ha // hamesha first value hi kam ki hoti ha
 
-  if(!channel?.length){
-    throw new ApiError(404, 'Channel does not exist');
+  if (!channel?.length) {
+    throw new ApiError(404, "Channel does not exist");
   }
 
-  return res.status(200)
-  .json(
-    new ApiResponse(200, channel[0], "User channel fetched successfully")
-  )
-
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User channel fetched successfully")
+    );
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
-      $match:{
-        _id: new mongoose.Types.ObjectId(req.user._id)
-      }
-    },
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id), // id humay string milti ha
+      },
+    }, 
     {
-      $lookup:{
-        from: 'videos',
-        localField: 'watchHistory',
-        foreignField: '_id',
-        as: 'watchHistory',
-        pipeline:[
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
           {
-            $lookup:{
-              from: 'users',
-              localField: 'owner',
-              foreignField: '_id',
-              as: 'owner',
-              pipeline:[
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
                 {
-                  $project:{ // jitna project ha wo apkay owner field ka andar hi chala jai ga
+                  $project: {
+                    // jitna project ha wo apkay owner field ka andar hi chala jai ga
                     fullName: 1,
                     username: 1,
-                    avatar: 1
-                  }
+                    avatar: 1,
+                  },
                 },
                 {
-                  $addFields:{
-                    owner:{ // existing field hi override ho jai gi
-                      $first: '$owner'
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
-    }
+                  $addFields: {
+                    owner: {
+                      // existing field hi override ho jai gi
+                      $first: "$owner",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
   ]);
 
   return res
-  .status(200)
-  .json(new ApiResponse(200, user[0].watchHistory, 'watch history fetched successfully'))
-})
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "watch history fetched successfully"
+      )
+    );
+});
 
 export {
   registerUser,
@@ -533,5 +545,5 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory
+  getWatchHistory,
 };
